@@ -11,7 +11,7 @@ import os, pdb, pandas, requests
 from sqlalchemy import create_engine
 import psycopg2
 from violation_summary import ViolationSummary
-from supplier import Supplier
+from supplier import Supplier, SingleSupplier
 from contaminants import Contaminants
 import db_setup
 
@@ -52,20 +52,32 @@ for zip_code, in readCur:
 
     inputElt = driver.find_element_by_xpath('//input[@class="zip"]')
     inputElt.send_keys(str_zip_code)
+
+    prev_url = driver.current_url
+
     driver.find_element_by_xpath('//input[@value="Go"]').click()
 
-    try:
-        supplier = Supplier(driver, writeCur, zip_code)
-    except Exception as e:
-        continue
+    while driver.current_url == prev_url:
+        sleep(0.1)
 
-    for id, href in supplier.parse():
+    if 'search' in driver.current_url:
+        supplier = Supplier(driver, writeCur, zip_code)
+        for id, href in supplier.parse():
+            driver.get(href)
+            vr = ViolationSummary(driver, engine, id)
+            violationSummary = vr.parse()
+            contaminants = Contaminants(driver, engine, id)
+            contaminants.parse()
+    else:
+        supplier = SingleSupplier(driver, writeCur, zip_code)
+        id, href = supplier.parse()
+        if id is None:
+            continue
         driver.get(href)
         vr = ViolationSummary(driver, engine, id)
         violationSummary = vr.parse()
         contaminants = Contaminants(driver, engine, id)
         contaminants.parse()
-
 
 
 
