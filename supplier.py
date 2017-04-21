@@ -13,7 +13,7 @@ class Supplier:
         try:
             table = self.driver.find_element_by_xpath('//table[@id="supplier-table"]')
         except NoSuchElementException as e:
-            return 
+            return []
         html = '<table>%s</table>' % table.get_attribute('innerHTML')
         self.df = pandas.read_html(html)[0]
         self.df['href'] = map(lambda x: x.get_attribute('href'), table.find_elements_by_xpath('//tr/td/a'))

@@ -41,15 +41,12 @@ def dump():
     open('out.html', 'w').write(soup.prettify().encode('utf-8'))
 
 base = 'http://www.ewg.org/tap-water/'
-
+driver.get(base)
+driver.find_element_by_xpath('//a[@href="javascript:gotopage();"]').click()
 
 readCur.execute('SELECT zipcode FROM zip_codes LEFT JOIN suppliers USING (zipcode) WHERE suppliers.id IS NULL;')
 for zip_code, in readCur:
     driver.get(base)
-    try:
-        driver.find_element_by_xpath('//a[@href="javascript:gotopage();"]').click()
-    except Exception as e:
-        pass
 
     str_zip_code = str(zip_code).zfill(5)
 
