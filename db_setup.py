@@ -4,17 +4,17 @@ def setup(engine):
         CREATE TABLE IF NOT EXISTS suppliers(
             id serial primary key,
             zipcode int,
-            supplier_name text unique,
+            supplier_name text,
             locations_served text,
             number_of_people_served int,
-            href text
-        )
+            href text unique
+        );
     """)
 
     engine.execute("""
         CREATE TABLE IF NOT EXISTS violation_summary(
-            id int, 
-            violation text, 
+            id int,
+            violation text,
             date_of_violation text
         )
     """)

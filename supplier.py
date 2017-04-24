@@ -24,15 +24,20 @@ class Supplier:
 
     def iter(self):
         for idx, row in self.df.iterrows():
-            self.cur.execute("""
+            res = self.cur.execute("""
                 INSERT INTO suppliers (supplier_name, locations_served, number_of_people_served, href, zipcode)
                 VALUES ('%s', '%s', %d, '%s', %d) ON CONFLICT DO NOTHING RETURNING id;
             """ % (row[0], row[1], row[2], row[3], self.zipcode))
-            rows = self.cur.fetchall()
+            rows = res.fetchall()
             if len(rows) == 0:
                 # Already did this one...
+                print('Already processed %s' % row[0])
                 continue
             else:
+                self.cur.execute("""
+                    UPDATE zip_codes SET suppliers=%d || suppliers
+                    WHERE zipcode=%d
+                """ %(rows[0][0], self.zipcode))
                 yield rows[0][0], row['href']
 
 class SingleSupplier:
@@ -48,26 +53,18 @@ class SingleSupplier:
         pop_elt = self.driver.find_elements_by_xpath('//div[contains(@class, "node")]//p')[0].text
         number_of_people_served = pop_elt.split(' - ')[0]
         number_of_people_served = int(re.findall(r'\d+', number_of_people_served.replace(',', ''))[0])
-        self.cur.execute("""
+        res = self.cur.execute("""
             INSERT INTO suppliers (supplier_name, locations_served, number_of_people_served, href, zipcode)
             VALUES ('%s', '%s', %d, '%s', %d) ON CONFLICT DO NOTHING RETURNING id;
         """ % (supplier_name, locations_served, number_of_people_served, href, self.zipcode))
-        rows = self.cur.fetchall()
+        rows = res.fetchall()
         if len(rows) == 0:
             # Already did this one...
+            print('Already processed %s' % supplier_name)
             return None, None
         else:
+            self.cur.execute("""
+                UPDATE zip_codes SET suppliers=%d || COALESCE(suppliers, '{}')
+                WHERE zipcode=%d
+            """ %(rows[0][0], self.zipcode))
             return rows[0][0], href
-
-
-
-
-
-
-
-
-
-
-
-
-        
