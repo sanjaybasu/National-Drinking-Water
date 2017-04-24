@@ -1,3 +1,4 @@
 *.pyc
 *.html
 zip_codes.csv
+.DS_Store
