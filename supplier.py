@@ -59,6 +59,11 @@ class SingleSupplier:
         """ % (supplier_name, locations_served, number_of_people_served, href, self.zipcode))
         rows = res.fetchall()
         if len(rows) == 0:
+            self.cur.execute("""
+                UPDATE zip_codes SET suppliers = suppliers.id || COALESCE(suppliers, '{}')
+                FROM suppliers
+                WHERE suppliers.href='%s' AND zip_codes.zipcode=%d
+            """ % (href, self.zipcode))
             # Already did this one...
             print('Already processed %s' % supplier_name)
             return None, None
