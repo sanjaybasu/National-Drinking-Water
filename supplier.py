@@ -2,6 +2,7 @@
 import pdb
 import pandas, re
 from selenium.common.exceptions import NoSuchElementException
+import traceback
 
 class Supplier:
     def __init__(self, driver, cur, zipcode):
@@ -23,22 +24,27 @@ class Supplier:
         return self.iter()
 
     def iter(self):
-        for idx, row in self.df.iterrows():
-            res = self.cur.execute("""
-                INSERT INTO suppliers (supplier_name, locations_served, number_of_people_served, href, zipcode)
-                VALUES ('%s', '%s', %d, '%s', %d) ON CONFLICT DO NOTHING RETURNING id;
-            """ % (row[0], row[1], row[2], row[3], self.zipcode))
-            rows = res.fetchall()
-            if len(rows) == 0:
-                # Already did this one...
-                print('Already processed %s' % row[0])
-                continue
-            else:
-                self.cur.execute("""
-                    UPDATE zip_codes SET suppliers=%d || suppliers
-                    WHERE zipcode=%d
-                """ %(rows[0][0], self.zipcode))
-                yield rows[0][0], row['href']
+        try:
+            for idx, row in self.df.iterrows():
+                row = row.apply(lambda x: x.replace('%', '%%') if type(x) is unicode or type(x) is str else x)
+                res = self.cur.execute("""
+                    INSERT INTO suppliers (supplier_name, locations_served, number_of_people_served, href, zipcode)
+                    VALUES ('%s', '%s', %d, '%s', %d) ON CONFLICT DO NOTHING RETURNING id;
+                """ % (row[0], row[1], row[2], row[3], self.zipcode))
+                rows = res.fetchall()
+                if len(rows) == 0:
+                    # Already did this one...
+                    print('Already processed %s' % row[0])
+                    continue
+                else:
+                    self.cur.execute("""
+                        UPDATE zip_codes SET suppliers=%d || suppliers
+                        WHERE zipcode=%d
+                    """ %(rows[0][0], self.zipcode))
+                    yield rows[0][0], row['href']
+        except Exception as e:
+            traceback.print_exc()
+            pdb.set_trace()
 
 class SingleSupplier:
     def __init__(self, driver, cur, zipcode):
